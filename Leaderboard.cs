@@ -136,6 +136,31 @@ namespace SI.AOC.Leaderboard
             }
         }
 
+        private string GetMedal(UserSolveRecord user, Icons icons, int year, int day, int rank)
+        {
+            string medal = icons.Empty;
+            if (user.IsSameDay(year, day))
+            {
+                medal = icons.SameDay;
+                user.User.SameDay ++;
+                if (rank == 0)
+                {
+                    medal = icons.Gold;
+                    user.User.Gold ++;
+                }
+                else if (rank == 1)
+                {
+                    medal = icons.Silver;
+                    user.User.Silver ++;
+                }
+                else if (rank == 2)
+                {
+                    medal = icons.Bronze;
+                    user.User.Bronze ++;
+                }                        
+            }
+            return medal;
+        }
         public string BuildReport(int reportYear)
         {
             var getLinkColor = (int year) => year == reportYear ? "#99ff99" : "009900";
@@ -180,7 +205,7 @@ namespace SI.AOC.Leaderboard
                 DayRecord day = item.Value;
                 day.Sort();
 
-                response += "<tr> <td style='color:#99EE99'>";
+                response += "<tr> <td style='color:#EEEE99'>";
                 response += $"<br><h3>DAY {item.Key} </h3> </td> <td> &nbsp; </td> <td> &nbsp; </td> <td> &nbsp; </td> </tr>";
 
                 for (int i = 0; i < day.Records[0].Count; i ++)
@@ -189,51 +214,8 @@ namespace SI.AOC.Leaderboard
                     bool hasu2 = day.Records[1].Count > i;
                     UserSolveRecord u2 = hasu2 ? day.Records[1]?[i] : new();
 
-                    string medal1 = icons.Empty;
-                    string medal2 = icons.Empty;
-
-                    if (u1.IsSameDay(reportYear, item.Key))
-                    {
-                        medal1 = icons.SameDay;
-                        u1.User.SameDay ++;
-                        if (i == 0)
-                        {
-                            medal1 = icons.Gold;
-                            u1.User.Gold ++;
-                        }
-                        else if (i == 1)
-                        {
-                            medal1 = icons.Silver;
-                            u1.User.Silver ++;
-                        }
-                        else if (i == 2)
-                        {
-                            medal1 = icons.Bronze;
-                            u1.User.Bronze ++;
-                        }                        
-                    }
-                    if (u2.IsSameDay(reportYear, item.Key))
-                    {
-                        medal2 = icons.SameDay;
-                        u2.User.SameDay ++;
-
-                        if (i == 0)
-                        {
-                            medal2 = icons.Gold;
-                            u2.User.Gold ++;
-                        }
-                        else if (i == 1)
-                        {
-                            medal2 = icons.Silver;
-                            u2.User.Silver ++;
-                        }
-                        else if (i == 2)
-                        {
-                            medal2 = icons.Bronze;
-                            u2.User.Bronze ++;
-                        }                        
-                    }
-
+                    string medal1 = GetMedal(u1, icons, reportYear, item.Key, i);
+                    string medal2 = GetMedal(u2, icons, reportYear, item.Key, i);
 
                     response += $"<tr> <td style='text-align:right'> {u1.User.Name} {medal1} </td> <td style='text-align:center'> " + u1.GetTimeString() + "</td>";
 
@@ -246,7 +228,6 @@ namespace SI.AOC.Leaderboard
                     {
                         response += "<td> &nbsp; </td> <td> &nbsp; </td> </tr>";
                     }
-
                 }
             }
 

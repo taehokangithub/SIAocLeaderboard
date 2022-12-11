@@ -37,19 +37,16 @@ namespace SI.AOC.Leaderboard
                 {
                     RefreshMinutes = int.Parse(str);
                 }
-
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
-            
         }
     }
 
     public static class FunctionMain
     {
-        
         private static Dictionary<int, DateTime> m_jsonTimes = new Dictionary<int, DateTime>();
         private static Dictionary<int, string> m_jsonTexts = new Dictionary<int, string>();
 

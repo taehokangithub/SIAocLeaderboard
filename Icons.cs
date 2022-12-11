@@ -11,11 +11,20 @@ namespace SI.AOC.Leaderboard
         public string SameDay { get; init; }
         public string Empty { get; init; }
         public string Star { get; init; }
-
+        public string StartDir { get; init; }
         private string m_attr;
         public Icons()
         {
-            m_attr = File.ReadAllText(Path.Combine("data", "icons", "attributeNormal.txt"));
+            string attrPath = Path.Combine("data", "icons", "attributeNormal.txt");
+            if (File.Exists(attrPath))
+            {
+                StartDir = ".";
+            }
+            else
+            {
+                StartDir = Path.Combine("/", "home", "site", "wwwroot");
+            }
+            m_attr = File.ReadAllText(Path.Combine(StartDir, attrPath));
             Gold = GetIconHtml("gold.png");
             Silver = GetIconHtml("silver.png");
             Bronze = GetIconHtml("bronze.png");
@@ -26,7 +35,7 @@ namespace SI.AOC.Leaderboard
 
         private string GetIconHtml(string fileName)
         {
-            var bytes = File.ReadAllBytes(Path.Combine("data", "icons", fileName));
+            var bytes = File.ReadAllBytes(Path.Combine(StartDir, "data", "icons", fileName));
             var encodedStr = Convert.ToBase64String(bytes);
             return $"<img src='data:image/png;base64,{encodedStr}' {m_attr}>";
         }
