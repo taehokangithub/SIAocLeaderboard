@@ -1,0 +1,9 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "APIsessionCookie" : "53616c7465645f5f8abcaaaaf8e4b2c37292054e64bc80b938afe8613259d77722b767482136f07364c92c655e400038edab7d04bf150af200d04694b9cd716c",
+        "RefreshMinutes" : 3
+    }
+}
