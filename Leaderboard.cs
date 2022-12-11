@@ -6,12 +6,17 @@ using System.Linq;
 
 namespace SI.AOC.Leaderboard
 {
+
     class User
     {
         public string Name { get; set; }
         public int ID { get; set; }
         public int LocalScore { get; set; }
         public int Stars { get; set; } = 0;
+        public int Gold { get; set; } =  0;
+        public int Silver { get; set; } = 0;
+        public int Bronze { get; set; } = 0;
+        public int SameDay { get; set; } = 0;
     }
 
     class UserSolveRecord
@@ -23,6 +28,16 @@ namespace SI.AOC.Leaderboard
             User = user;
             Timestamp = time;
         }
+        public UserSolveRecord()
+        {
+            User = new();
+        }
+        public bool IsSameDay(int year, int day)
+        {
+            DateTimeOffset offset = DateTimeOffset.FromUnixTimeSeconds(Timestamp);
+            return (offset.Day == day && offset.Year == year && offset.Month == 12);
+        }
+
         public string GetTimeString()
         {
             DateTimeOffset offset = DateTimeOffset.FromUnixTimeSeconds(Timestamp);
@@ -39,12 +54,12 @@ namespace SI.AOC.Leaderboard
             return minutes.ToString().PadLeft(5);
         }
     }
-    class Day
+    class DayRecord
     {
         public List<List<UserSolveRecord>> Records { get; set; }
         bool sorted = false;
 
-        public Day()
+        public DayRecord()
         {
             Records = new List<List<UserSolveRecord>>();
 
@@ -83,7 +98,7 @@ namespace SI.AOC.Leaderboard
     class Leaderboard
     {
         Dictionary<int, User> m_users = new Dictionary<int, User>();
-        Dictionary<int, Day> m_days = new Dictionary<int, Day>();
+        Dictionary<int, DayRecord> m_days = new Dictionary<int, DayRecord>();
 
         public void AddUserJObject(JObject member)
         {
@@ -113,7 +128,7 @@ namespace SI.AOC.Leaderboard
 
             foreach (JValue dayProperty in completionData.Properties().Select(p => p.Name))
             {
-                Day day = GetDayOrCreate(dayProperty.ToObject<int>());
+                DayRecord day = GetDayOrCreate(dayProperty.ToObject<int>());
 
                 JObject dayRecord = completionData[dayProperty.ToString()] as JObject;
 
@@ -124,7 +139,7 @@ namespace SI.AOC.Leaderboard
         public string BuildReport(int reportYear)
         {
             var getLinkColor = (int year) => year == reportYear ? "#99ff99" : "009900";
-
+            Icons icons = new();
             string response = @"
                 <head>
                 <meta charset='utf-8'/>
@@ -162,7 +177,7 @@ namespace SI.AOC.Leaderboard
 
             foreach(var item in m_days.OrderBy(d => d.Key).Reverse())
             {
-                Day day = item.Value;
+                DayRecord day = item.Value;
                 day.Sort();
 
                 response += "<tr> <td style='color:#99EE99'>";
@@ -171,13 +186,60 @@ namespace SI.AOC.Leaderboard
                 for (int i = 0; i < day.Records[0].Count; i ++)
                 {
                     UserSolveRecord u1 = day.Records[0]?[i];
+                    bool hasu2 = day.Records[1].Count > i;
+                    UserSolveRecord u2 = hasu2 ? day.Records[1]?[i] : new();
 
-                    response += "<tr> <td style='text-align:right'> " + u1.User.Name + "</td> <td style='text-align:center'> " + u1.GetTimeString() + "</td>";
+                    string medal1 = icons.Empty;
+                    string medal2 = icons.Empty;
 
-                    if (day.Records[1].Count > i)
+                    if (u1.IsSameDay(reportYear, item.Key))
                     {
-                        UserSolveRecord u2 = day.Records[1]?[i];
-                        response += "<td style='text-align:right'> " + u2.User.Name + "</td> <td style='text-align:center'> " + u2.GetTimeString() 
+                        medal1 = icons.SameDay;
+                        u1.User.SameDay ++;
+                        if (i == 0)
+                        {
+                            medal1 = icons.Gold;
+                            u1.User.Gold ++;
+                        }
+                        else if (i == 1)
+                        {
+                            medal1 = icons.Silver;
+                            u1.User.Silver ++;
+                        }
+                        else if (i == 2)
+                        {
+                            medal1 = icons.Bronze;
+                            u1.User.Bronze ++;
+                        }                        
+                    }
+                    if (u2.IsSameDay(reportYear, item.Key))
+                    {
+                        medal2 = icons.SameDay;
+                        u2.User.SameDay ++;
+
+                        if (i == 0)
+                        {
+                            medal2 = icons.Gold;
+                            u2.User.Gold ++;
+                        }
+                        else if (i == 1)
+                        {
+                            medal2 = icons.Silver;
+                            u2.User.Silver ++;
+                        }
+                        else if (i == 2)
+                        {
+                            medal2 = icons.Bronze;
+                            u2.User.Bronze ++;
+                        }                        
+                    }
+
+
+                    response += $"<tr> <td style='text-align:right'> {u1.User.Name} {medal1} </td> <td style='text-align:center'> " + u1.GetTimeString() + "</td>";
+
+                    if (hasu2)
+                    {
+                        response += $"<td style='text-align:right'> {u2.User.Name} {medal2} </td> <td style='text-align:center'> " + u2.GetTimeString() 
                             + "</td> </tr>";
                     }
                     else
@@ -189,7 +251,7 @@ namespace SI.AOC.Leaderboard
             }
 
             response += "<tr> <td style='color:#99EE99; text-align:left'>";
-            response += $"<br><h3>Local Score </h3> </td> <td> &nbsp; </td> <td> &nbsp; </td> <td> &nbsp; </td> </tr>";
+            response += $"<br><h3>Score </h3> </td> <td> &nbsp; </td> <td> &nbsp; </td> <td> &nbsp; </td> </tr>";
             var userList = m_users.Values.ToList();
             userList.Sort((a, b) => b.LocalScore - a.LocalScore);
 
@@ -201,9 +263,16 @@ namespace SI.AOC.Leaderboard
                     break;
                 }
                 rank ++;
-                response += $"<tr> <td style='text-align:right'> <span style='color:#66DD77'> ({rank}) </span> {user.Name}" 
-                            + $"</td> <td style='text-align:center'> {user.LocalScore}" 
-                            + $"<span style='color:#898989'> ({user.Stars} stars) </span> </td>"
+                const string nbsp = "&nbsp;";
+                //bool anyMedal = user.Gold > 0 || user.Silver > 0 || user.Bronze > 0;
+                response += $"<tr> <td style='text-align:right'> <span style='color:#66DD77'> </span> {user.Name} {user.LocalScore}" 
+                            + $"</td> <td style='text-align:left'> &nbsp;" 
+                                + $"{icons.Star}{user.Stars} {(user.Stars < 10 ? nbsp : string.Empty)}"
+                                + ((user.SameDay > 0) ? $"{icons.SameDay}{user.SameDay} {(user.SameDay < 10 ? nbsp : string.Empty)}" : "")
+                                + ((user.Gold > 0) ? $"{icons.Gold}{(user.Gold > 0 ? user.Gold : nbsp)} {(user.Gold < 10 ? nbsp : string.Empty)}" : "")
+                                + ((user.Silver > 0) ? $"{icons.Silver}{(user.Silver > 0 ? user.Silver : nbsp)} {(user.Silver < 10 ? nbsp : string.Empty)}" : "")
+                                + ((user.Bronze > 0) ? $"{icons.Bronze}{(user.Bronze > 0 ? user.Bronze : nbsp)} {(user.Bronze < 10 ? nbsp : string.Empty)}" : "")
+                            + "</td>"
                             + "<td> </td> <td> </td> </tr>";
             }
             
@@ -211,12 +280,12 @@ namespace SI.AOC.Leaderboard
             return response;
         }
 
-        private Day GetDayOrCreate(int day)
+        private DayRecord GetDayOrCreate(int day)
         {
-            Day ret;
+            DayRecord ret;
             if (!m_days.TryGetValue(day, out ret))
             {
-                ret = new Day();
+                ret = new DayRecord();
                 m_days[day] = ret;
             }
             return ret;
